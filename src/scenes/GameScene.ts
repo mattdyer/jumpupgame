@@ -44,7 +44,69 @@ export class GameScene extends Phaser.Scene {
         // Get horizontal input from keyboard
         if (this.input.keyboard?.isDown(Phaser.Input.Keyboard.KeyCodes.LEFT)) {
             dx = -1;
-        } else if (this.input.keyboard?.is 
-        // Wait, I'll fix this typo in the next step or just write it correctly now.
+        } else if (this.input.keyboard?.isDown(Phaser.Input.Keyboard.KeyCodes.RIGHT)) {
+            dx = 1;
+        }
+
+        this.player.update(dt, dx);
+
+        // Update platforms and physics/collisions
+        this.updateGame(dt);
+
+        // Render everything
+        this.render();
+
+        // Update Score
+        this.updateScore();
+    }
+
+    private updateGame(dt: number) {
+        // Logic for collisions with platforms
+        const playerBounds = this.player.getBounds();
+        for (const platform of this.platforms) {
+            if (checkRectCollision(playerBounds, { x: platform.x, y: platform.y, width: platform.width, height: platform.height })) {
+                // If falling and hits platform top
+                if (this.player.vy > 0 && this.player.y + this.player.height <= platform.y + platform.height + 5) {
+                    this.player.jump();
+                }
+            }
+        }
+
+        // Simple infinite generation: if player is high enough, add more platforms
+        if (this.player.y < 300 && this.platforms.length < 20) {
+             const lastPlatform = this.platforms[this.platforms.length - 1];
+             this.platforms.push({
+                 x: Math.random() * 750,
+                 y: lastPlatform.y - 100,
+                 width: 50 + Math.random() * 50,
+                 height: 10
+             });
+        }
+
+        // Remove old platforms
+        this.platforms = this.platforms.filter(p => p.y < this.player.y + 600);
+    }
+
+    private updateScore() {
+        const currentHeight = Math.abs(Math.floor(this.player.y / 10)); // Simplified height scoring
+        if (currentHeight > this.score) {
+            this.score = currentHeight;
+        }
+        this.scoreText.setText(`Score: ${this.score}`);
+    }
+
+    private render() {
+        this.graphics.clear();
+        
+        // Draw Platforms
+        this.graphics.fillStyle(0x00ff00, 1);
+        for (const p of this.platforms) {
+            this.graphics.fillRect(p.x, p.y, p.width, p.height);
+        }
+
+        // Draw Player
+        this.graphics.fillStyle(0xff0000, 1);
+        this.graphics.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
     }
 }
+

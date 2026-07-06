@@ -1,18 +1,5 @@
 import Phaser from 'phaser';
-
-class GameScene extends Phaser.Scene {
-    constructor() {
-        super('GameScene');
-    }
-
-    preload() {
-        // No assets yet
-    }
-
-    create() {
-        this.add.text(100, 100, 'JumpUp Loading...', { fontSize: '32px', color: '#fff' });
-    }
-}
+import { GameScene } from './scenes/GameScene';
 
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
