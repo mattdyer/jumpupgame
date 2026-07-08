@@ -9,19 +9,16 @@ import { calculateScore } from '../core/scoring';
 export class GameScene extends Phaser.Scene {
     private player!: Player;
     private platforms: Platform[] = [];
-    private enemies: any[] = []; // In a real app, use a proper type
+    private enemies: any[] = []; 
     private powerups: any[] = [];
     private score: number = 0;
-    private lastHeight: number = 0;
     private graphics!: Phaser.GameObjects.Graphics;
     private scoreText!: Phaser.GameObjects.Text;
-    private startY: number = 500;
-
+    private gameState: 'playing' | 'gameover' = 'playing';
 
     constructor() {
         super('GameScene');
     }
-
 
 
     create() {
@@ -36,17 +33,11 @@ export class GameScene extends Phaser.Scene {
         // Initialize Enemies for testing
         this.enemies.push({ x: 400, y: 300, type: 'patroller', vx: 2, leftBound: 50, rightBound: 750 } as any);
         this.enemies.push({ x: 400, y: 100, type: 'stinger', speed: 1 } as any);
-        // Initialize Powerups for testing
-        this.powerups.push({ x: 400, y: 200, type: 'spring' } as any);
-        this.powerups.push({ x: 200, y: -100, type: 'shield' } as any);
-        this.powerups.push({ x: 600, y: -200, type: 'jetpack' } as any);
-
         
         // Initialize Powerups for testing
         this.powerups.push({ x: 400, y: 200, type: 'spring' } as any);
         this.powerups.push({ x: 200, y: -100, type: 'shield' } as any);
 
-        
         // Input
         this.input.keyboard?.on('keydown-SPACE', () => this.player.jump());
         
@@ -55,145 +46,4 @@ export class GameScene extends Phaser.Scene {
         this.scoreText.setScrollFactor(0);
     }
 
-    update(time: number, delta: number) {
-        const dt = delta / 1000;
-        let dx = 0;
-
-        // Get horizontal input from keyboard
-        if (this.input.keyboard?.isDown(Phaser.Input.KeyCodes.LEFT)) {
-            dx = -1;
-        } else if (this.input.keyboard?.isDown(Phaser.Input.Keyboard.KeyCodes.RIGHT)) {
-            dx = 1;
-        }
-
-        this.player.update(dt, dx);
-
-        // Update platforms and physics/collisions
-        this.updateGame(dt);
-
-        // Render everything
-        this.render();
-
-        // Update Score
-        this.updateScore();
     }
-
-    private updateGame(dt: number) {
-        // Logic for collisions with platforms
-        const playerBounds = this.player.getBounds();
-        for (const platform of this.platforms) {
-            if (checkRectCollision(playerBounds, { x: platform.x, y: platform.y, width: platform.width, height: platform.height })) {
-                // If falling and hits platform top
-                if (this.player.vy > 0 && this.player.y + this.player.height <= platform.y + platform.height + 5) {
-                    this.player.jump();
-                }
-            }
-        }
-
-        // Update enemies and check player collision
-        for (const enemy of this.enemies) {
-            if (enemy.type === 'patroller') {
-                enemy.x = updatePatroller(enemy.x, enemy.vx, enemy.leftBound, enemy.rightBound);
-            } else if (enemy.type === 'stinger') {
-                enemy.y = updateStinger(enemy.y, this.player.y, 100, enemy.speed);
-            }
-
-        // Update powerups and check player collision
-        for (let i = this.powerups.length - 1; i >= 0; i--) {
-            const p = this.powerups[i];
-            if (checkRectCollision(this.player.getBounds(), { x: p.x, y: p.y, width: 20, height: 20 })) {
-                this.player.setPowerup(p.type);
-
-                if (p.type === 'jetpack') {
-                    const originalGravity = this.player.gravity;
-                    this.player.gravity = 0.05; // Low gravity for jetpack effect
-                    this.time.delayedCall(3000, () => {
-                        this.player.gravity = originalGravity;
-                    });
-                }
-
-                if (p.type === 'spring') {
-                    const newJumpStrength = applyPowerupEffect(this.player.jumpStrength, p.type);
-                    if (newJumpStrength !== this.player.jumpStrength) {
-                        this.player.jumpStrength = newJumpStrength;
-                    }
-                }
-
-                this.powerups.splice(i, 1); // Remove collected powerup
-            }
-        }
-
-            // Check collision with player
-            if (checkRectCollision(this.player.getBounds(), { x: enemy.x, y: enemy.y - 20, width: 20, height: 20 })) {
-                this.player.y = 500; // Reset player if hit for testing
-            }
-        }
-
-        // Update powerups and check player collision
-        for (let i = this.powerups.length - 1; i >= 0; i--) {
-            const p = this.powerups[i];
-            if (checkRectCollision(this.player.getBounds(), { x: p.x, y: p.y, width: 20, height: 20 })) {
-                const newJumpStrength = applyPowerupEffect(this.player.jumpStrength, p.type);
-                if (newJumpStrength !== this.player.jumpStrength) {
-                    this.player.jumpStrength = newJumpStrength;
-                }
-                this.powerups.splice(i, 1); // Remove collected powerup
-            }
-        }
-
-        // Simple infinite generation: if player is high enough, add more platforms
-        if (this.player.y < 300 && this.platforms.length < 20) {
-             const lastPlatform = this.platforms[this.platforms.length - 1];
-             this.platforms.push({
-                 x: Math.random() * 750,
-                 y: lastPlatform.y - 100,
-                 width: 50 + Math.random() * 50,
-                 height: 10
-             });
-        }
-
-        // Remove old platforms
-        this.platforms = this.platforms.filter(p => p.y < this.player.y + 600);
-    }
-
-    private updateScore() {
-        const currentHeight = Math.abs(Math.floor(this.player.y / 10)); // Simplified height scoring
-        if (currentHeight > this.score) {
-            this.score = currentHeight;
-        }
-        this.scoreText.setText(`Score: ${this.score}`);
-    }
-
-    private render() {
-        this.graphics.clear();
-        
-        // Draw Platforms
-        this.graphics.fillStyle(0x00ff00, 1);
-        for (const p of this.platforms) {
-            this.graphics.fillRect(p.x, p.y, p.width, p.height);
-        }
-
-        // Draw Enemies
-        this.graphics.fillStyle(0xff0000, 1);
-        for (const enemy of this.enemies) {
-            this.graphics.fillRect(enemy.x - 10, enemy.y - 10, 20, 20);
-        }
-
-        // Draw Powerups
-        this.graphics.fillStyle(0xffff00, 1);
-        for (const p of this.powerups) {
-            this.graphics.fillRect(p.x - 10, p.y - 10, 20, 20);
-        }
-        
-        // Draw Player
-        this.graphics.fillStyle(0xff0000, 1);
-        this.graphics.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
-
-        // Camera logic: follow player vertically
-        if (this.player.y < this.cameras.main.scrollY) {
-            this.cameras.main.scrollY = this.player.y;
-        }
-    }
-
-
-
