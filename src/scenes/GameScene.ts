@@ -20,6 +20,8 @@ export class GameScene extends Phaser.Scene {
         super('GameScene');
     }
 
+
+
     create() {
         this.graphics = this.add.graphics();
         
@@ -28,17 +30,17 @@ export class GameScene extends Phaser.Scene {
         
         // Initial Platforms
         this.platforms = generatePlatforms(10);
-
+        
         // Initialize Enemies for testing
         this.enemies.push({ x: 400, y: 300, type: 'patroller', vx: 2, leftBound: 50, rightBound: 750 } as any);
         this.enemies.push({ x: 400, y: 100, type: 'stinger', speed: 1 } as any);
-
+        
         // Initialize Powerups for testing
         this.powerups.push({ x: 400, y: 200, type: 'spring' } as any);
         this.powerups.push({ x: 200, y: -100, type: 'shield' } as any);
+
         
         // Input
-        this.input.keyboard?.on('pad-SPACE', () => this.player.jump()); // wait I changed it to pad? no
         this.input.keyboard?.on('keydown-SPACE', () => this.player.jump());
         
         // Score text
@@ -46,13 +48,12 @@ export class GameScene extends Phaser.Scene {
         this.scoreText.setScrollFactor(0);
     }
 
-
     update(time: number, delta: number) {
         const dt = delta / 1000;
         let dx = 0;
 
         // Get horizontal input from keyboard
-        if (this.input.keyboard?.isDown(Phaser.Input.Keyboard.KeyCodes.LEFT)) {
+        if (this.input.keyboard?.isDown(Phaser.Input.KeyCodes.LEFT)) {
             dx = -1;
         } else if (this.input.keyboard?.isDown(Phaser.Input.Keyboard.KeyCodes.RIGHT)) {
             dx = 1;
@@ -79,6 +80,32 @@ export class GameScene extends Phaser.Scene {
                 if (this.player.vy > 0 && this.player.y + this.player.height <= platform.y + platform.height + 5) {
                     this.player.jump();
                 }
+            }
+        }
+
+        // Update enemies and check player collision
+        for (const enemy of this.enemies) {
+            if (enemy.type === 'patroller') {
+                enemy.x = updatePatroller(enemy.x, enemy.vx, enemy.leftBound, enemy.rightBound);
+            } else if (enemy.type === 'stinger') {
+                enemy.y = updateStinger(enemy.y, this.player.y, 100, enemy.speed);
+            }
+
+            // Check collision with player
+            if (checkRectCollision(this.player.getBounds(), { x: enemy.x, y: enemy.y - 20, width: 20, height: 20 })) {
+                this.player.y = 500; // Reset player if hit for testing
+            }
+        }
+
+        // Update powerups and check player collision
+        for (let i = this.powerups.length - 1; i >= 0; i--) {
+            const p = this.powerups[i];
+            if (checkRectCollision(this.player.getBounds(), { x: p.x, y: p.y, width: 20, height: 20 })) {
+                const newJumpStrength = applyPowerupEffect(this.player.jumpStrength, p.type);
+                if (newJumpStrength !== this.player.jumpStrength) {
+                    this.player.jumpStrength = newJumpStrength;
+                }
+                this.powerups.splice(i, 1); // Remove collected powerup
             }
         }
 
@@ -114,9 +141,27 @@ export class GameScene extends Phaser.Scene {
             this.graphics.fillRect(p.x, p.y, p.width, p.height);
         }
 
+        // Draw Enemies
+        this.graphics.fillStyle(0xff0000, 1);
+        for (const enemy of this.enemies) {
+            this.graphics.fillRect(enemy.x - 10, enemy.y - 10, 20, 20);
+        }
+
+        // Draw Powerups
+        this.graphics.fillStyle(0xffff00, 1);
+        for (const p of this.powerups) {
+            this.graphics.fillRect(p.x - 10, p.y - 10, 20, 20);
+        }
+        
         // Draw Player
         this.graphics.fillStyle(0xff0000, 1);
         this.graphics.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
+
+        // Camera logic: follow player vertically
+        if (this.player.y < this.cameras.main.scrollY) {
+            this.cameras.main.scrollY = this.player.y;
+        }
     }
-}
+
+
 
