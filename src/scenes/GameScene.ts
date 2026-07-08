@@ -15,6 +15,8 @@ export class GameScene extends Phaser.Scene {
     private lastHeight: number = 0;
     private graphics!: Phaser.GameObjects.Graphics;
     private scoreText!: Phaser.GameObjects.Text;
+    private startY: number = 500;
+
 
     constructor() {
         super('GameScene');
