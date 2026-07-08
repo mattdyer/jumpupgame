@@ -46,21 +46,6 @@ export class GameScene extends Phaser.Scene {
         this.scoreText.setScrollFactor(0);
     }
 
-        this.graphics = this.add.graphics();
-        
-        // Initialize Player: x, y, width, height, gravity, jumpStrength, speed
-        this.player = new Player(400, 500, 30, 30, 0.2, -10, 200);
-        
-        // Initial Platforms
-        this.platforms = generatePlatforms(10);
-        
-        // Input
-        this.input.keyboard?.on('keydown-SPACE', () => this.player.jump());
-
-        // Score text
-        this.scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', color: '#fff' });
-        this.scoreText.setScrollFactor(0);
-    }
 
     update(time: number, delta: number) {
         const dt = delta / 1000;
