@@ -36,6 +36,11 @@ export class GameScene extends Phaser.Scene {
         // Initialize Enemies for testing
         this.enemies.push({ x: 400, y: 300, type: 'patroller', vx: 2, leftBound: 50, rightBound: 750 } as any);
         this.enemies.push({ x: 400, y: 100, type: 'stinger', speed: 1 } as any);
+        // Initialize Powerups for testing
+        this.powerups.push({ x: 400, y: 200, type: 'spring' } as any);
+        this.powerups.push({ x: 200, y: -100, type: 'shield' } as any);
+        this.powerups.push({ x: 600, y: -200, type: 'jetpack' } as any);
+
         
         // Initialize Powerups for testing
         this.powerups.push({ x: 400, y: 200, type: 'spring' } as any);
@@ -92,6 +97,31 @@ export class GameScene extends Phaser.Scene {
             } else if (enemy.type === 'stinger') {
                 enemy.y = updateStinger(enemy.y, this.player.y, 100, enemy.speed);
             }
+
+        // Update powerups and check player collision
+        for (let i = this.powerups.length - 1; i >= 0; i--) {
+            const p = this.powerups[i];
+            if (checkRectCollision(this.player.getBounds(), { x: p.x, y: p.y, width: 20, height: 20 })) {
+                this.player.setPowerup(p.type);
+
+                if (p.type === 'jetpack') {
+                    const originalGravity = this.player.gravity;
+                    this.player.gravity = 0.05; // Low gravity for jetpack effect
+                    this.time.delayedCall(3000, () => {
+                        this.player.gravity = originalGravity;
+                    });
+                }
+
+                if (p.type === 'spring') {
+                    const newJumpStrength = applyPowerupEffect(this.player.jumpStrength, p.type);
+                    if (newJumpStrength !== this.player.jumpStrength) {
+                        this.player.jumpStrength = newJumpStrength;
+                    }
+                }
+
+                this.powerups.splice(i, 1); // Remove collected powerup
+            }
+        }
 
             // Check collision with player
             if (checkRectCollision(this.player.getBounds(), { x: enemy.x, y: enemy.y - 20, width: 20, height: 20 })) {
