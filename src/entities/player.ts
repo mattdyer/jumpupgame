@@ -6,6 +6,7 @@ export class Player {
   public vy = 0;
   public isInvulnerable = false;
   public jumpMultiplier = 1;
+  public jetpackTimer = 0;
   private _jumpStrength: number;
   private _gravity: number;
 
@@ -39,16 +40,21 @@ export class Player {
   }
 
   public update(dt: number, directionX: number) {
+    if (this.jetpackTimer > 0) {
+      this.jetpackTimer -= dt;
+    }
+
     this.vx = updateHorizontalVelocity(this.vx, directionX, this.speed);
-    this.vy = applyGravity(this.vy, this._gravity);
+    const currentGravity = this.jetpackTimer > 0 ? this._gravity * 0.2 : this._gravity;
+    this.vy = applyGravity(this.vy, currentGravity);
     
     this.x = updatePosition(this.x, this.vx, dt);
-
     this.y = updatePosition(this.y, this.vy, dt);
   }
 
   public jump() {
     this.vy = applyJumpImpulse(this.vy, this._jumpStrength * this.jumpMultiplier);
+    this.jumpMultiplier = 1; // Reset multiplier after jump
   }
 
   public setPowerup(type: string) {
@@ -56,6 +62,8 @@ export class Player {
       this.jumpMultiplier = 2;
     } else if (type === 'shield') {
       this.isInvulnerable = true;
+    } else if (type === 'jetpack') {
+      this.jetpackTimer = 3; // 3 seconds of jetpack
     }
   }
 
