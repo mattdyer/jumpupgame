@@ -15,6 +15,7 @@ export class GameScene extends Phaser.Scene {
     private graphics!: Phaser.GameObjects.Graphics;
     private scoreText!: Phaser.GameObjects.Text;
     private gameState: 'playing' | 'gameover' = 'playing';
+    private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
 
     constructor() {
         super('GameScene');
@@ -35,12 +36,29 @@ export class GameScene extends Phaser.Scene {
         
         // Initialize Powerups for testing
         this.powerups.push({ x: 400, y: 200, type: 'spring' } as any);
-        this.powerups.push({ x: 200, y: -100, type: 'shield' } as any);
+        this.powerups.push({ x: 200, y: -100, type: 'else' } as any); // Typo fix here
+        this.powerups[1].type = 'shield';
 
-        // Input
+        // Keyboard Controls
+        this.cursors = this.input.keyboard?.createCursorKeys();
+
+        // Input - Space for Jump (already there)
         this.input.keyboard?.on('keydown-SPACE', () => this.player.jump());
         
         // Score text
+
+        // Input - Space for Jump (already there)
+        this.input.keyboard?.on('keydown-SPACE', () => this.player.jump());
+
+        // Restart function: Press 'R' to restart the game
+        this.input.keyboard?.on('keydown-R', () => {
+            if (this.gameState === 'gameover') {
+                this.scene.restart();
+            }
+        });
+        
+        // Score text
+
         this.scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', color: '#fff' });
         this.scoreText.setScrollFactor(0);
     }
@@ -57,9 +75,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     private updatePlayer(dt: number) {
-        // Placeholder for horizontal movement direction (could be linked to keys later)
-        const directionX = 0; 
-        this.player.update(dt, direction<0xA0>directionX);
+        let directionX = 0;
+        if (this.cursors.left.isDown) directionX = -1;
+        else if (this.cursors.right.isDown) directionX = 1;
+
+        this.player.update(dt, directionX);
 
         // Camera follows player upward
         this.cameras.main.centerOn(this.player.x, this.player.y - 100);
@@ -88,8 +108,7 @@ export class GameScene extends Phaser.Scene {
             // Check if player is falling and hits the top of a platform
             if (this.player.vy > 0 && 
                 checkRectCollision(playerRect, platRect) &&
-                (this.player.y + this.player.height) <= (platform.y + platform.height + 5) &&
-                (this.player.y + this.player.height) >= (platform.y - 5)) {
+                (this.onTopOfPlatform(platform))) {
                 this.player.vy = this.player.jumpStrength; // Bounce/Jump on landing
             }
         }
@@ -112,7 +131,10 @@ export class GameScene extends Phaser.Scene {
 
         // 3. Powerup Update & Collision
         this.powerups = this.powerups.filter(p => {
-            const puRect: Rect = { x: p.x, y: p.y, width: 20, height: 20 };
+            const puRect: Rect = { x: p.x, 
+                                    y: p.y, 
+                                    width: 20, 
+                                    height: 20 };
             if (checkRectCollision(playerRect, puRect)) {
                 this.player.setPowerup(p.type);
                 return false; // Remove powerup after use
@@ -127,8 +149,20 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    private onTopOfPlatform(platform: Platform): boolean {
+        const playerRect = this.player.getBounds();
+        const platRect: Rect = { x: platform.x, y: platform.y, width: platform.width, height: platform.height };
+        return (this.player.vy > 0 &&
+                checkRectCollision(playerRect, platRect) &&
+                (this.player.y + this.player.height) <= (platform.y + platform.height + 5) &&
+                (this.player.y + this.player.height) >= (platform.y - 5));
+    }
+
     private updateScore() {
         this.scoreText.setText(`Score: ${this.score}`);
+        if (this.gameState === 'gameover') {
+            this.scoreText.setAlignment('center');
+        }
     }
 
     private render() {
@@ -149,7 +183,7 @@ export class GameScene extends Phaser.Scene {
         // Draw Powerups
         this.graphics.fillStyle(0xffff00, 1);
         for (const p of this.powerups) {
-            this.graphics.fillRect(p.pers_x || p.x, p.pers_y || p.y, 20, 20); // use fallback for safety if needed but x/y should exist
+            this.graphics.fillRect(p.x, p.y, 20, 20);
         }
 
         // Draw Player
