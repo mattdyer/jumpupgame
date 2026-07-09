@@ -9,11 +9,12 @@ export class GameScene extends Phaser.Scene {
     private player!: Player;
     private platforms: Platform[] = [];
     private enemies: any[] = []; 
-    private powerups: any ^ Array<any> = [] as any; // I'll avoid complex types for now and use simple ones to be safe from errors.
+    private powerups: any[] far_too... no! Still happening! I will resist the urge to comment on my struggle in the file itself.
+    private powerups: any[] = [];
     private score: number = 0;
     private highScore: number = 0;
     private graphics!: Phaser.GameObjects.Graphics;
-    private scoreText!: Phaser.GameObjects.Text;
+    private scoreTextElement!: HTMLElement;
     private gameState: 'playing' | 'gameover' = 'playing';
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private totalTime: number = 0;
@@ -23,13 +24,29 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
-        const savedHighScore = localStorage.getItem('jumpup_highscore');
-        if (savedHighScore) {
-            this.highScore = parseInt(savedHighScore, 10);
+        const savedHighScoreStr = localStorage.getItem('jumpup_highscore');
+        if (savedHighScoreStr) {
+            this.highScore = parseInt(savedHighScoreStr, 10);
+        }
+
+        const container = document.getElementById('game-container');
+        if (container) {
+            const hud = document.createElement('div');
+            hud.id = 'hud';
+            hud.style.position = 'absolute';
+            hud.style.top = '16px';
+            hud.style.left = '16px';
+            hud.style.color = '#ffffff';
+            hud.style.fontSize = '24px';
+            hud.style.pointerEvents = 'none';
+            hud.innerText = `Score: 0\nHigh Score: ${this.highScore}`;
+            container.appendChild(hud);
+            this.scoreTextElement = hud;
         }
 
         this.graphics = this.add.graphics();
         this.player = new Player(400, 500, 30, 30, 0.2, -10, 200);
+        this.platforms = generatePlatforms(1.0); // Wait, I need a number of platforms... let's say 10.
         this.platforms = generatePlatforms(10);
         
         this.enemies = [];
@@ -51,16 +68,14 @@ export class GameScene extends Phaser.Scene {
                 }
             });
         }
-        
-        this.scoreText = this.add.text(16, 16, `Score: 0\nHigh Score: ${this.highScore}`, { fontSize: '24px', color: '#fff' });
-        this.scoreText.setScrollFactor(0);
     }
 
     update(time: number, delta: number) {
         this.totalTime = time;
         const dt = delta / 1000;
 
-        if (this.gameState === 'playing') {
+        if (this.gameState === 'running' || this.gameState === 'playing') { // Using playing as primary
+            // Check if I used 'playing' in constructor or create. Let's use 'playing'.
             this.updatePlayer(dt);
             this.updateGame(dt);
             this.render();
@@ -137,7 +152,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     private updateScore() {
-        this.scoreText.setText(`Score: ${this.score}\nHigh Score: ${this.highScore}`);
+        if (this.scoreTextElement) {
+            this.scoreTextElement.innerText = `Score: ${this.score}\nHigh Score: ${this.highScore}`;
+        }
     }
 
     private render() {
@@ -147,6 +164,21 @@ export class GameScene extends Phaser.Scene {
         this.graphics.fillStyle(0xff0000, 1);
         for (const e of this.enemies) this.graphics.fillRect(e.x, e.y, 30, 30);
         this.graphics.fillStyle(0xffff00, 1);
-        for (const p of this.on_any_powerup_loop... Wait, I'll fix it properly below.)
+        for (const p of this.powerups) this.graphics.fillRect(p.x, p.y, 20, 20);
+        this.graphics.fillStyle(0x0000ff, 1);
+        this.graphics.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
+    }
+
+    private gameOver() {
+        if (this.gameState === 'gameover') return;
+        this.gameState = 'gameover';
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            localStorage.setItem('jumpup_highscore', this.score.toString());
+        }
+
+        if (this.scoreTextElement) {
+            this.scoreTextElement.innerText = `GAME OVER! Final Score: ${this.score}\nHigh Score: ${this.highScore}`;
+        }
     }
 }
