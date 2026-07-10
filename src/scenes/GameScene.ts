@@ -16,34 +16,32 @@ export class GameScene extends Phaser.Scene {
     private scoreTextElement!: HTMLElement;
     private gameState: 'playing' | 'gameover' = 'playing';
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-    private totalTime: number = 0;
 
     constructor() {
         super('GameScene');
     }
 
     create() {
-        console.log('GameScene: create() called');
         const savedHighScoreStr = localStorage.getItem('jumpup_highscore');
         if (savedHighScoreStr) {
             this.highScore = parseInt(savedHighScoreStr, 10);
         }
 
-        // Append HUD to body instead of game-container to avoid any Phaser overwriting issues
-        console.log('GameScene: Creating HUD');
-        const hud = document.createElement('div');
-        hud.id = 'hud';
-        hud.style.position = 'absolute';
-        hud.style.top = '16px';
-        hud.style.left = '16px';
-        hud.style.color = '#ffffff';
-        hud.style.fontSize = '24px';
-        hud.style.pointerEvents = 'none';
-        hud.style.zIndex = '100'; // Ensure it's on top
-        hud.innerText = `Score: 0\nHigh Score: ${this.highScore}`;
-        document.body.appendChild(hud);
-        this.scoreTextElement = hud;
-        console.log('GameScene: HUD appended to body');
+        const container = document.getElementById('game-container');
+        if (container) {
+            const hud = document.createElement('div');
+            hud.id = 'hud';
+            hud.style.position = 'absolute';
+            hud.style.top = '16px';
+            hud.style.left = '16px';
+            hud.style.color = '#ffffff';
+            hud.style.fontSize = '24px';
+            hud.style.pointerEvents = 'none';
+            hud.style.zIndex = '100';
+            hud.innerText = `Score: 0\nHigh Score: ${this.highScore}`;
+            container.appendChild(hud);
+            this.scoreTextElement = hud;
+        }
 
         this.graphics = this.add.graphics();
         this.player = new Player(400, 500, 30, 30, 0.2, -10, 200);
@@ -54,7 +52,6 @@ export class GameScene extends Phaser.Scene {
         this.enemies.push({ x: 400, y: 100, type: 'stinger', speed: 1 } as any);
         
         this.powerups = [];
-        this.unintendedPushPlaceholder(); // Just a placeholder to see if I can call functions
         this.powerups.push({ x: 400, y: 200, type: 'spring' } as any);
         this.powerups.push({ x: 200, y: -100, type: 'shield' } as any);
         this.powerups.push({ x: 600, y: -300, type: 'jetpack' } as any);
@@ -71,14 +68,8 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
-    private unintendedPushPlaceholder() {
-        console.log('GameScene: placeholder function called');
-    }
-
     update(time: number, delta: number) {
-        this.totalTime = time;
         const dt = delta / 1000;
-
         if (this.gameState === 'playing') {
             this.updatePlayer(dt);
             this.updateGame(dt);
@@ -89,8 +80,6 @@ export class GameScene extends Phaser.Scene {
 
     private updatePlayer(dt: number) {
         let directionX = 0;
-        if (this.cursors && this.cursors.left.isDown) directionelse if (directionX = -1); // Wait, I messed up again!
-        // Re-writing carefully.
         if (this.cursors && this.cursors.left.isDown) directionX = -1;
         else if (this.cursors && this.cursors.right.isDown) directionX = 1;
 
@@ -113,7 +102,10 @@ export class GameScene extends Phaser.Scene {
         const playerRect: Rect = this.player.getBounds();
 
         for (const platform of this.platforms) {
-            const platRect: Rect = { x: platform.x, y: platform.y, width: platform.width, height: platform.height };
+            const platRect: Rect = { x: platform.x, 
+                                     y: platform.y, 
+                                     width: platform.width, 
+                                     height: platform.height };
             if (this.player.vy > 0 && checkRectCollision(playerRect, platRect)) {
                 if (this.onTopOfPlatform(platform)) {
                     this.player.vy = this.player.jumpStrength;
@@ -143,7 +135,7 @@ export class GameScene extends Phaser.Scene {
             return true;
         });
 
-        this.score = calculateScore(-this.player.y); 
+        this.score = calculateScore(500 - this.player.y); 
         if (this.player.y > this.cameras.main.scrollY + 800) {
             this.gameOver();
         }
